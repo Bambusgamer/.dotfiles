@@ -1,0 +1,60 @@
+#!/bin/bash
+
+if tmux has-session -t AP 2>/dev/null; then
+    if [ -n "$TMUX" ]; then
+        tmux switch-client -t AP
+    else
+        tmux attach-session -t AP
+    fi
+    tmux display-message "Attached to session"
+    exit 0
+fi
+
+setup_pane() {
+    local pane="$1"
+    local name="$2"
+    local path="$3"
+    local keephistory=$4
+    local history_file="~/src/autopurger/.hist_${name}"
+
+    tmux send-keys -t "$pane" "export HISTFILE=/dev/null" C-m
+    tmux send-keys -t "$pane" "export PROMPT_COMMAND='history -a; history -c; history -r'" C-m
+    tmux send-keys -t "$pane" "cd ${path}" C-m
+    if [ $keephistory -eq 1 ]; then
+        tmux send-keys -t "$pane" "export HISTFILE=${history_file}; history -d \$(history 1)" C-m
+    fi
+    tmux send-keys -t "$pane" "clear; history -d \$(history 1)" C-m
+}
+
+cd ~/src/autopurger
+tmux new -d -s AP -n "code"
+tmux send-keys -t AP:0 "nvim" C-m
+
+tmux neww -t AP -n 'runtime'
+
+setup_pane "AP:1.0" "discord-gateway-connector" "apps/discord-gateway-connector" 1
+tmux split-window -h -t AP:1
+setup_pane "AP:1.1" "delete-engine" "apps/delete-engine" 1
+tmux split-window -v -t AP:1.0
+setup_pane "AP:1.1" "fetch-engine" "apps/fetch-engine" 1
+tmux split-window -v -t AP:1.2
+setup_pane "AP:1.3" "interactions" "apps/interactions" 1
+
+tmux neww -t AP -n 'util'
+setup_pane "AP:2" "util" "." 1
+
+tmux neww -t AP -n "cloc"
+setup_pane "AP:3" "cloc" "." 0
+
+tmux neww -t AP -n "git"
+setup_pane "AP:4" "git" "." 1
+
+tmux select-window -t AP:0 \;
+
+tmux display-message "Sessions loaded!" \;
+
+if [ -n "$TMUX" ]; then
+    tmux switch-client -t AP
+else
+    tmux attach-session -t AP
+fi
