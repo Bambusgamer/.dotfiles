@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# patch pipe connection
+if [ ! -e /run/user/1000/discord-ipc-0 ]; then
+    ln /run/user/1000/snap.discord/discord-ipc-0 /run/user/1000/discord-ipc-0
+fi
+
 if tmux has-session -t AP 2>/dev/null; then
     if [ -n "$TMUX" ]; then
         tmux switch-client -t AP

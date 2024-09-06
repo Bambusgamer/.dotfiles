@@ -1,0 +1,23 @@
+#!/bin/bash
+
+if tmux has-session -t study 2>/dev/null; then
+    if [ -n "$TMUX" ]; then
+        tmux switch-client -t study
+    else
+        tmux attach-session -t study
+    fi
+    tmux display-message "Attached to session"
+    exit 0
+fi
+
+cd ~/study
+tmux new -d -s study -n "editor"
+tmux send-keys -t study:0 "nvim" C-m
+
+tmux display-message "Sessions loaded!" \;
+
+if [ -n "$TMUX" ]; then
+    tmux switch-client -t study
+else
+    tmux attach-session -t study
+fi
