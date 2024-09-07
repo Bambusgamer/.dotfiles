@@ -14,7 +14,7 @@ shift 2
 FOLDERS=("$@") # The rest of the arguments are the folders
 
 # Base directory where the stowables are located
-DOTFILES_DIR="$HOME/.dot/stowables"
+DOTFILES_DIR="$HOME/.dotfiles/stowables"
 
 # Ensure the base directory exists
 if [ ! -d "$DOTFILES_DIR" ]; then
