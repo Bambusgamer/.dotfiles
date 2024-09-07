@@ -1,11 +1,66 @@
-#!/usr/bin/env zsh
-if [[ -z $STOW_FOLDERS ]]; then
-    STOW_FOLDERS="bin,.config,.bashrc"
+#!/bin/bash
+
+# Check if the correct number of arguments are provided
+if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
+    echo "Usage: $0 <install|clean> <home_directory> <list_file>"
+    echo "Example: $0 install $HOME dotfiles.txt"
+    exit 1
 fi
 
-if [[ -z $DOTFILES ]]; then
-    DOTFILES=$HOME/.dotfiles
+# Set the mode (install or clean), home directory, and the file containing the list of dotfiles
+MODE="$1"
+HOME_DIR="$2"
+LIST_FILE="$3"
+
+# Directory where your dotfiles are located (assuming ~/.dotfiles)
+DOTFILES_DIR="$HOME/.dotfiles"
+
+# Ensure the list file exists
+if [ ! -f "$LIST_FILE" ]; then
+    echo "List file $LIST_FILE not found!"
+    exit 1
 fi
 
-STOW_FOLDERS=$STOW_FOLDERS DOTFILES=$DOTFILES $DOTFILES/install
+# Change to the dotfiles directory
+cd "$DOTFILES_DIR" || { echo "Failed to cd into $DOTFILES_DIR"; exit 1; }
+
+# Function to stow (install) dotfiles
+install_dotfiles() {
+    while IFS= read -r dotfile; do
+        if [ -d "$DOTFILES_DIR/$dotfile" ] || [ -f "$DOTFILES_DIR/$dotfile" ]; then
+            echo "Stowing $dotfile into $HOME_DIR..."
+            stow --target="$HOME_DIR" "$dotfile"
+        else
+            echo "$dotfile does not exist in $DOTFILES_DIR"
+        fi
+    done < "$LIST_FILE"
+    echo "Dotfiles stowed successfully!"
+}
+
+# Function to unstow (clean) dotfiles
+clean_dotfiles() {
+    while IFS= read -r dotfile; do
+        if [ -d "$DOTFILES_DIR/$dotfile" ] || [ -f "$DOTFILES_DIR/$dotfile" ]; then
+            echo "Removing $dotfile from $HOME_DIR..."
+            stow --target="$HOME_DIR" -D "$dotfile"
+        else
+            echo "$dotfile does not exist in $DOTFILES_DIR"
+        fi
+    done < "$LIST_FILE"
+    echo "Dotfiles cleaned successfully!"
+}
+
+# Run the appropriate function based on the mode argument
+case "$MODE" in
+    install)
+        install_dotfiles
+        ;;
+    clean)
+        clean_dotfiles
+        ;;
+    *)
+        echo "Invalid mode: $MODE. Use 'install' or 'clean'."
+        exit 1
+        ;;
+esac
 

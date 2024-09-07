@@ -14,13 +14,12 @@ install_programs() {
 sudo apt-get update
 sudo apt-get upgrade -y
 
-install_programs()
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh)"
 
-# Install necessary packages
-sudo apt-get install -y git vim zsh curl fzf
+if [[ -z "$1" ]]; then
+    echo "Please provide a file containing the list of programs to install."
+    exit 1
+fi
 
-# Install Oh My Zsh (if using zsh)
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-
-echo "Setup complete!"
+install_programs "$1"
 
