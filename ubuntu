@@ -1,56 +1,57 @@
 #!/bin/bash
 
-# Check if the correct number of arguments are provided
-if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
-    echo "Usage: $0 <install|clean> <home_directory> <list_file>"
-    echo "Example: $0 install $HOME dotfiles.txt"
+# Ensure the correct number of arguments are provided
+if [ "$#" -lt 3 ]; then
+    echo "Usage: $0 <install|clean> <home_directory> <folders...>"
+    echo "Example: $0 install $HOME bash nvim tmux"
     exit 1
 fi
 
-# Set the mode (install or clean), home directory, and the file containing the list of dotfiles
+# Get the mode (install or clean), home directory, and list of folders
 MODE="$1"
 HOME_DIR="$2"
-LIST_FILE="$3"
+shift 2
+FOLDERS=("$@") # The rest of the arguments are the folders
 
-# Directory where your dotfiles are located (assuming ~/.dotfiles)
-DOTFILES_DIR="$HOME/.dotfiles"
+# Base directory where the stowables are located
+DOTFILES_DIR="$HOME/.dot/stowables"
 
-# Ensure the list file exists
-if [ ! -f "$LIST_FILE" ]; then
-    echo "List file $LIST_FILE not found!"
+# Ensure the base directory exists
+if [ ! -d "$DOTFILES_DIR" ]; then
+    echo "Dotfiles directory $DOTFILES_DIR not found!"
     exit 1
 fi
 
 # Change to the dotfiles directory
 cd "$DOTFILES_DIR" || { echo "Failed to cd into $DOTFILES_DIR"; exit 1; }
 
-# Function to stow (install) dotfiles
+# Function to stow (install) dotfiles for a specific folder
 install_dotfiles() {
-    while IFS= read -r dotfile; do
-        if [ -d "$DOTFILES_DIR/$dotfile" ] || [ -f "$DOTFILES_DIR/$dotfile" ]; then
-            echo "Stowing $dotfile into $HOME_DIR..."
-            stow --target="$HOME_DIR" "$dotfile"
+    for folder in "${FOLDERS[@]}"; do
+        if [ -d "$DOTFILES_DIR/$folder" ]; then
+            echo "Stowing $folder into $HOME_DIR..."
+            stow --target="$HOME_DIR" "$folder"
         else
-            echo "$dotfile does not exist in $DOTFILES_DIR"
+            echo "$folder does not exist in $DOTFILES_DIR"
         fi
-    done < "$LIST_FILE"
+    done
     echo "Dotfiles stowed successfully!"
 }
 
-# Function to unstow (clean) dotfiles
+# Function to unstow (clean) dotfiles for a specific folder
 clean_dotfiles() {
-    while IFS= read -r dotfile; do
-        if [ -d "$DOTFILES_DIR/$dotfile" ] || [ -f "$DOTFILES_DIR/$dotfile" ]; then
-            echo "Removing $dotfile from $HOME_DIR..."
-            stow --target="$HOME_DIR" -D "$dotfile"
+    for folder in "${FOLDERS[@]}"; do
+        if [ -d "$DOTFILES_DIR/$folder" ]; then
+            echo "Removing $folder from $HOME_DIR..."
+            stow --target="$HOME_DIR" -D "$folder"
         else
-            echo "$dotfile does not exist in $DOTFILES_DIR"
+            echo "$folder does not exist in $DOTFILES_DIR"
         fi
-    done < "$LIST_FILE"
+    done
     echo "Dotfiles cleaned successfully!"
 }
 
-# Run the appropriate function based on the mode argument
+# Execute the appropriate function based on the mode argument
 case "$MODE" in
     install)
         install_dotfiles
