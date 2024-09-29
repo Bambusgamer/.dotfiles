@@ -1,0 +1,163 @@
+#!/bin/bash
+
+########
+# Help #
+########
+
+Help() {
+    echo "A simple tmux multiterminal session manager"
+    echo 
+    echo "Syntax: tmuxss -<k|a|i> [-p] [-g]"
+    echo "options:"
+    echo "k     Kills the sessions associated with the terminal"
+    echo "a     Attaches to a session group given the groups root ID"
+    echo "i     Inits the main session"
+    echo "p     An optional PID argument"
+    echo "g     Group to attach to"
+    echo "h     Print the help menu"
+    echo
+}
+
+
+SESSION_PID=""
+CURRENT_SESSION=""
+PID=""
+GROUP=""
+SUBCOMMAND=""
+
+while getopts ":hp:g:kai" option; do
+    case $option in
+        h) # display Help
+            Help
+            exit;;
+        p) # a PID
+            PID=$OPTARG;;
+        g) # a group name
+            GROUP=$OPTARG;;
+        a) # Attach
+            SUBCOMMAND="a";;
+        k) # Kill
+            SUBCOMMAND="k";;
+        i) # Init
+            SUBCOMMAND="i";;
+        \?)
+            echo "Invalid option"
+            echo "Pull up the help menu with tmuxss -h"
+            exit;;
+        esac
+    done
+
+
+getSession() {
+    if [ -z "$PID" ]; then
+        CURRENT_SESSION=$(tmux display-message -p '#S')
+
+        SESSION_PID=$(echo "$CURRENT_SESSION" | grep -oE '[0-9]+$')
+
+        if [ -z "$SESSION_PID" ]; then
+            echo "No PID found in the current tmux session name: $CURRENT_SESSION"
+            exit 1
+        fi
+
+        # echo "No PID specified. Using PID from current tmux session: $SESSION_PID"
+    else
+        SESSION_PID="$PID"
+    fi
+}
+
+attachSession() {
+    # Check if a session exists in the group with the current PID
+    SESSION_NAME=$(tmux list-sessions -F "#{session_name}" | grep "^$GROUP#.*$SESSION_PID$")
+
+    if [ -z "$SESSION_NAME" ]; then
+        # If no session exists with the current PID, create a new one
+        SESSION_NAME="$GROUP#$SESSION_PID"
+        # tmux display-message "Created new session"
+        tmux new-session -ds "$SESSION_NAME" -t "$GROUP"
+        # else
+        # tmux display-message "Switched to $GROUP (#$CURRENT_PID)"
+    fi
+
+    # Switch to the found or newly created session
+    tmux switch-client -t "$SESSION_NAME"
+}
+
+killSessionsByPID() {
+    SESSION_LIST=$(tmux list-sessions -F "#{session_name}")
+
+    for SESSION in $SESSION_LIST; do
+        if [[ $SESSION == *#$SESSION_PID ]]; then
+            # echo "Killing session: $SESSION"
+            tmux kill-session -t "$SESSION"
+        fi
+    done
+}
+
+killSessionsByGroup() {
+    SESSION_LIST=$(tmux list-sessions -F "#{session_name}")
+
+    for SESSION in $SESSION_LIST; do
+        if [[ $SESSION == $GROUP* ]]; then
+            if { [ $SESSION == $CURRENT_SESSION ] && [ "$GROUP" != "main"* ]; }; then
+                tmuxss -a -g main
+            fi
+            tmux kill-session -t "$SESSION"
+        fi
+    done
+}
+
+getSession
+
+case $SUBCOMMAND in
+    k) # kill all sessions 
+        if [ -n "$PID" -a -n "$GROUP" ]; then
+            echo "No PID or group specified"
+            echo "Check out tmuxss -h"
+            exit
+        fi
+        if [ "$PID" ]; then
+            killSessionsByPID
+        fi
+        if [ "$GROUP" ]; then
+            killSessionsByGroup
+        fi
+        exit;;
+    a) # attach to session group
+        if [ -z "$GROUP" ]; then
+            echo "No group specified"
+            echo "Check out tmuxss -h"
+            exit
+        fi
+        attachSession
+        exit;;
+    i) # Inits a Terminal window
+        if [ -n "$PID" ]; then
+            echo "No PID specified"
+            echo "Call the init function with a pid set:"
+            echo "tmuxss -p \$(echo \$$)"
+            exit
+        fi
+
+        if [ tmux has-session -t main 2>/dev/null ]; then
+            tmux new-session -ds main
+        fi
+        
+        exit;;
+esac
+
+ITEMS=""
+index=1
+
+SESSION_GROUPS=$(tmux list-sessions -F "#{session_name}" | awk -F '#' '{print $1}' | sort -u)
+while read -r group; do
+  if [[ -n "$group" ]]; then
+    ITEMS+="$group $index 'run-shell \"tmuxss -a -g \"$group\"\"' "
+    ((index++))
+  fi
+done <<< "$SESSION_GROUPS"
+
+if [ -n "$ITEMS" ]; then
+  eval "tmux display-menu $ITEMS"
+else
+  tmux display-message "No session groups found."
+fi

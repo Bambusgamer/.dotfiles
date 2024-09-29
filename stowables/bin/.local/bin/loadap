@@ -6,14 +6,18 @@ if [ ! -e /run/user/1000/discord-ipc-0 ]; then
 fi
 
 if tmux has-session -t AP 2>/dev/null; then
-    if [ -n "$TMUX" ]; then
-        tmux switch-client -t AP
-    else
-        tmux attach-session -t AP
-    fi
-    tmux display-message "Attached to session"
+    # if [ -n "$TMUX" ]; then
+    #     tmux switch-client -t AP
+    # else
+    #     tmux attach-session -t AP
+    # fi
+    # tmux display-message "Attached to session"
+    # exit 0
+    tmuxss -a -g AP
     exit 0
 fi
+
+tmuxss -k -g AP
 
 setup_pane() {
     local pane="$1"
@@ -54,12 +58,22 @@ setup_pane "AP:3" "cloc" "." 0
 tmux neww -t AP -n "git"
 setup_pane "AP:4" "git" "." 1
 
+tmux neww -t AP -n "prod"
+setup_pane "AP:5" "prod" "." 1
+
+tmux neww -t AP -n "redis-prod"
+setup_pane "AP:6" "redis-prod" "." 1
+
+tmux neww -t AP -n "redis-dev"
+setup_pane "AP:7" "redis-dev" "." 1
+
 tmux select-window -t AP:0 \;
 
-tmux display-message "Sessions loaded!" \;
+# tmux display-message "Sessions loaded!" \;
 
-if [ -n "$TMUX" ]; then
-    tmux switch-client -t AP
-else
-    tmux attach-session -t AP
-fi
+# if [ -n "$TMUX" ]; then
+#     tmux switch-client -t AP
+# else
+#     tmux attach-session -t AP
+# fi
+tmuxss -a -g AP
