@@ -25,7 +25,7 @@ PID=""
 GROUP=""
 SUBCOMMAND=""
 
-while getopts ":hp:g:kai" option; do
+while getopts "p:g:hkai" option; do
     case $option in
         h) # display Help
             Help
@@ -58,8 +58,6 @@ getSession() {
             echo "No PID found in the current tmux session name: $CURRENT_SESSION"
             exit 1
         fi
-
-        # echo "No PID specified. Using PID from current tmux session: $SESSION_PID"
     else
         SESSION_PID="$PID"
     fi
@@ -131,18 +129,23 @@ case $SUBCOMMAND in
         attachSession
         exit;;
     i) # Inits a Terminal window
-        if [ -n "$PID" ]; then
+        if [ -z "$SESSION_PID" ]; then
             echo "No PID specified"
             echo "Call the init function with a pid set:"
             echo "tmuxss -p \$(echo \$$)"
             exit
         fi
 
-        if [ tmux has-session -t main 2>/dev/null ]; then
+        if [ $(tmux has-session -t main) ]; then
             tmux new-session -ds main
         fi
-        
-        exit;;
+
+        # tmux new-session -s "main#$SESSION_PID" -t "main"
+       
+        trap "tmuxss -k -p $SESSION_PID"
+        tmuxss -a -g "main" -p "$SESSION_PID"
+        exit
+        ;;
 esac
 
 ITEMS=""

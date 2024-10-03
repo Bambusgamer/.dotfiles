@@ -24,4 +24,4 @@ tmux display-message "Sessions loaded!" \;
 #     tmux attach-session -t study
 # fi
 
-switchorcreate study
+tmuxss -a -g study

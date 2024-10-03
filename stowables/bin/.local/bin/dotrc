@@ -1,0 +1,19 @@
+#!/bin/bash
+
+if tmux has-session -t dotfiles2>/dev/null; then
+    tmuxss -a -g dotfiles
+    exit 0
+fi
+tmuxss -k -g dotfiles
+
+cd ~/.dotfiles
+tmux new -d -s dotfiles -n "editor"
+tmux send-keys -t dotfiles:0 "nvim" C-m
+
+tmux neww -t dotfiles -n "shell"
+
+tmux select-window -t dotfiles:0 \;
+
+tmux display-message "Sessions loaded!" \;
+
+tmuxss -a -g dotfiles

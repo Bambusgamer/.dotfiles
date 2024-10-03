@@ -1,0 +1,20 @@
+#!/bin/bash
+
+if tmux has-session -t bashrc >/dev/null; then
+    tmuxss -a -g bashrc
+    exit 0
+fi
+tmuxss -k -g bashrc
+
+cd ~/.dotfiles/stowables/bash/.bashrc
+
+tmux new -d -s bashrc -n "editor"
+tmux send-keys -t bashrc:0 "nvim" C-m
+
+tmux neww -t bashrc -n "shell"
+
+tmux select-window -t bashrc:0 \;
+
+tmux display-message "Sessions loaded!" \;
+
+tmuxss -a -g bashrc

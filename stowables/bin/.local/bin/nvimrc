@@ -1,0 +1,19 @@
+#!/bin/bash
+
+if tmux has-session -t nvimrc >/dev/null; then
+    tmuxss -a -g nvimrc
+    exit 0
+fi
+tmuxss -k -g nvimrc
+
+cd ~/.dotfiles/stowables/nvim/.config/nvim
+tmux new -d -s nvimrc -n "editor"
+tmux send-keys -t nvimrc:0 "nvim" C-m
+
+tmux neww -t nvimrc -n "shell"
+
+tmux select-window -t nvimrc:0 \;
+
+tmux display-message "Sessions loaded!" \;
+
+tmuxss -a -g nvimrc

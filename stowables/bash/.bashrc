@@ -141,12 +141,8 @@ source "$OSH"/oh-my-bash.sh
 # For a full list of active aliases, run `alias`.
 #
 # Example aliases
-alias bashrc="nvim ~/.bashrc"
-alias nvimrc="nvim ~/.config/nvim"
-alias tmuxrc="nvim ~/.config/tmux/tmux.conf"
 # alias ohmybash="mate ~/.oh-my-bash"
 alias apsrc="~/src/autopurger"
-alias apdesrc="~/src/autopurger/apps/delete-engine"
 alias t="tmux"
 
 export NVM_DIR="$HOME/.nvm"
