@@ -47,7 +47,6 @@ while getopts "p:g:hkai" option; do
         esac
     done
 
-
 getSession() {
     if [ -z "$PID" ]; then
         CURRENT_SESSION=$(tmux display-message -p '#S')
@@ -108,18 +107,38 @@ getSession
 
 case $SUBCOMMAND in
     k) # kill all sessions 
-        if [ -n "$PID" -a -n "$GROUP" ]; then
-            echo "No PID or group specified"
-            echo "Check out tmuxss -h"
-            exit
-        fi
+        # if [ -n "$PID" -a -n "$GROUP" ]; then
+        #     # echo "No PID or group specified"
+        #     # echo "Check out tmuxss -h"
+        #     # exit
+        #
+        #     ITEMS=""
+        #     index=1
+        #
+        #     SESSION_GROUPS=$(tmux list-sessions -F "#{session_name}" | awk -F '#' '{print $1}' | sort -u)
+        #     while read -r group; do
+        #         if [[ -n "$group" ]]; then
+        #             ITEMS+="$group $index 'run-shell \"tmuxss -k -g \"$group\"\"' "
+        #             ((index++))
+        #         fi
+        #     done <<< "$SESSION_GROUPS"
+        #
+        #     if [ -n "$ITEMS" ]; then
+        #         eval "tmux display-menu $ITEMS"
+        #     else
+        #         tmux display-message "No session groups found."
+        #     fi
+        #     return
+        # fi
+
         if [ "$PID" ]; then
             killSessionsByPID
         fi
         if [ "$GROUP" ]; then
             killSessionsByGroup
         fi
-        exit;;
+        # exit;;
+        ;;
     a) # attach to session group
         if [ -z "$GROUP" ]; then
             echo "No group specified"
@@ -148,19 +167,28 @@ case $SUBCOMMAND in
         ;;
 esac
 
+if [[ -z "$SUBCOMMAND" || "$SUBCOMMAND" == "a" ]]; then
+    SUBCOMMAND="a"
+    TITLE="Select to attach"
+fi
+
+if [ "$SUBCOMMAND" == "k" ]; then
+    TITLE="Select to kill"
+fi
+
 ITEMS=""
 index=1
 
 SESSION_GROUPS=$(tmux list-sessions -F "#{session_name}" | awk -F '#' '{print $1}' | sort -u)
 while read -r group; do
   if [[ -n "$group" ]]; then
-    ITEMS+="$group $index 'run-shell \"tmuxss -a -g \"$group\"\"' "
+    ITEMS+="$group $index 'run-shell \"tmuxss -$SUBCOMMAND -g \"$group\"\"' "
     ((index++))
   fi
 done <<< "$SESSION_GROUPS"
 
 if [ -n "$ITEMS" ]; then
-  eval "tmux display-menu $ITEMS"
+  eval "tmux display-menu -T \"$TITLE\" $ITEMS"
 else
   tmux display-message "No session groups found."
 fi
