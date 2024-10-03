@@ -6,10 +6,10 @@ if tmux has-session -t tmuxrc >/dev/null; then
 fi
 tmuxss -k -g tmuxrc
 
-cd ~/.dotfiles/stowables/tmux/.config/tmux/tmux.conf
+cd ~/.dotfiles/stowables/tmux/.config/tmux
 
 tmux new -d -s tmuxrc -n "editor"
-tmux send-keys -t tmuxrc:0 "nvim" C-m
+tmux send-keys -t tmuxrc:0 "nvim tmux.conf" C-m
 
 tmux neww -t tmuxrc -n "shell"
 
