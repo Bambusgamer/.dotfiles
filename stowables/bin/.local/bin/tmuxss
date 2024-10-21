@@ -7,10 +7,11 @@
 Help() {
     echo "A simple tmux multiterminal session manager"
     echo 
-    echo "Syntax: tmuxss -<k|a|i> [-p] [-g]"
+    echo "Syntax: tmuxss -<k|a|i|c> [-p] [-g]"
     echo "options:"
     echo "k     Kills the sessions associated with the terminal"
     echo "a     Attaches to a session group given the groups root ID"
+    echo "c     Creates a session group under in the CWD prepolulated with an env"
     echo "i     Inits the main session"
     echo "p     An optional PID argument"
     echo "g     Group to attach to"
@@ -25,7 +26,7 @@ PID=""
 GROUP=""
 SUBCOMMAND=""
 
-while getopts "p:g:hkai" option; do
+while getopts "p:g:hkaic" option; do
     case $option in
         h) # display Help
             Help
@@ -40,6 +41,8 @@ while getopts "p:g:hkai" option; do
             SUBCOMMAND="k";;
         i) # Init
             SUBCOMMAND="i";;
+        c) # Create
+            SUBCOMMAND="c";;
         \?)
             echo "Invalid option"
             echo "Pull up the help menu with tmuxss -h"
@@ -137,7 +140,10 @@ case $SUBCOMMAND in
         if [ "$GROUP" ]; then
             killSessionsByGroup
         fi
-        # exit;;
+
+        if [[ "$PID" || "$GROUP" ]]; then
+            exit
+        fi
         ;;
     a) # attach to session group
         if [ -z "$GROUP" ]; then
@@ -165,6 +171,29 @@ case $SUBCOMMAND in
         tmuxss -a -g "main" -p "$SESSION_PID"
         exit
         ;;
+    c) # Creates a session group
+        if [ -z "$GROUP" ]; then
+            echo "No group name provided"
+            echo "Check out tmuxss -h"
+            exit
+        fi
+
+        SESSION_NAME=$(tmux list-sessions -F "#{session_name}" | grep "^$GROUP#.*$SESSION_PID$")
+        if [ "$SESSION_NAME" ]; then
+            tmux display-message -t "There already exists a session group with this name"
+            exit
+        fi
+
+        tmux new -ds "$GROUP" -n "code"
+        tmux send-keys -t "$GROUP":0 "nvim" C-m
+
+        tmux neww -t "$GROUP"
+
+        tmux select-window -t "$GROUP":0 
+
+        attachSession
+        exit
+    ;;
 esac
 
 if [[ -z "$SUBCOMMAND" || "$SUBCOMMAND" == "a" ]]; then

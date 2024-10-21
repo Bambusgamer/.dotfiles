@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if tmux has-session -t dotfiles2>/dev/null; then
+if tmux has-session -t dotfiles 2>/dev/null; then
     tmuxss -a -g dotfiles
     exit 0
 fi
