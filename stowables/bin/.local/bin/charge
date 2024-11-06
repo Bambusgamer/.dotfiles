@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# Define the path to battery control files (Adjust BAT0 if needed)
+BATTERY_PATH="/sys/class/power_supply/BAT0"
+START_FILE="$BATTERY_PATH/charge_control_start_threshold"
+END_FILE="$BATTERY_PATH/charge_control_end_threshold"
+
+# Check if battery control files exist
+if [[ ! -f "$START_FILE" || ! -f "$END_FILE" ]]; then
+    echo "Battery control files not found. Please check your BATTERY_PATH."
+    exit 1
+fi
+
+# Helper function to set the charge thresholds
+set_charge_limits() {
+    local start=$1
+    local end=$2
+    echo "$start" | sudo tee "$START_FILE" > /dev/null
+    echo "$end" | sudo tee "$END_FILE" > /dev/null
+    echo "Charging limits set to start = $start%, end = $end%"
+}
+
+# Main script logic
+case $1 in
+    normal)
+        set_charge_limits 0 36
+        sleep 1
+        set_charge_limits 35 85
+        ;;
+    now)
+        set_charge_limits 0 85
+        ;;
+    dock)
+        set_charge_limits 0 35
+        ;;
+    full)
+        set_charge_limits 0 100
+        ;;
+    custom)
+        # Ensure both start and end values are provided
+        if [[ -z $2 || -z $3 ]]; then
+            echo "Usage for custom mode: charge custom <start> <end>"
+            exit 1
+        fi
+        set_charge_limits "$2" "$3"
+        ;;
+    *)
+        echo "Usage: charge <normal|now|dock|full|custom> [start] [end]"
+        exit 1
+        ;;
+esac
+
