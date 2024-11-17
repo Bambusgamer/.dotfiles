@@ -157,5 +157,9 @@ case ":$PATH:" in
 esac
 # pnpm end
 
-PATH=~/.console-ninja/.bin:~/.dotfiles/bin:~/miniconda3/condabin:$PATH
+PATH=~/.local/bin:$PATH
 
+
+export PATH=$PATH:/home/vincent/.spicetify
+
+PATH=~/.console-ninja/.bin:$PATH
