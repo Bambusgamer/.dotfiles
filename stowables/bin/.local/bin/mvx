@@ -1,0 +1,2 @@
+for f in *x*; do mv "$f" "$(echo "$f" | sed -E 's/.*x([^x]*)$/x\1/')"; done
+
