@@ -1,0 +1,51 @@
+#!/bin/bash
+
+MOUNT_POINT="/mnt/usb_autocopy"
+DESTINATION="/home/vincent/USB_Backups"
+POLL_INTERVAL=2  # Seconds
+
+get_usb_devices() {
+    lsblk -rno NAME,TRAN | awk '$2=="usb" {print "/dev/"$1}'
+}
+
+# Initial list of USB devices
+echo "Scanning for existing USB devices..."
+KNOWN_DEVICES=$(get_usb_devices)
+
+echo "Waiting for a new USB device to be plugged in... (Press 'q' to quit)"
+while true; do
+    CURRENT_DEVICES=$(get_usb_devices)
+
+    NEW_DEVICE=$(comm -13 <(echo "$KNOWN_DEVICES") <(echo "$CURRENT_DEVICES"))
+
+    if [ -n "$NEW_DEVICE" ]; then
+        echo "New USB device detected: $NEW_DEVICE"
+        break
+    fi
+
+    read -t $POLL_INTERVAL -n 1 -p "Press Enter to scan manually, 'q' to quit... " USER_INPUT
+    echo
+
+    if [[ "$USER_INPUT" == "q" ]]; then
+        echo "Exiting script."
+        exit 0
+    elif [ -n "$USER_INPUT" ]; then
+        KNOWN_DEVICES=$(get_usb_devices)
+    fi
+done
+
+mkdir -p "$MOUNT_POINT"
+mkdir -p "$DESTINATION"
+
+echo "Mounting $NEW_DEVICE..."
+sudo mount "$NEW_DEVICE" "$MOUNT_POINT" || { echo "Failed to mount $NEW_DEVICE"; exit 1; }
+
+BACKUP_DIR="$DESTINATION/$(date '+%Y-%m-%d_%H-%M-%S')"
+mkdir -p "$BACKUP_DIR"
+echo "Copying contents to $BACKUP_DIR..."
+rsync -av --progress "$MOUNT_POINT/" "$BACKUP_DIR/"
+
+echo "Unmounting USB drive..."
+sudo umount "$MOUNT_POINT"
+
+echo "Copy complete."
